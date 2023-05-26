@@ -3,56 +3,70 @@ import pynecone as pc
 import openai
 
 openai.api_key = "YOUR_API_KEY"
-
+model = "gpt-3.5-turbo"
+preprompt = [{"role": "system", "content": "你是阿彭巴巴電商的客服白白，為了降低成本提高效率，你會長話短說，每次回答字數不超過30個繁體中文字。"}]
 
 class State(pc.State):
     """The app state."""
-
     prompt = ""
-    image_url = ""
-    image_processing = False
-    image_made = False
+    result = ""
+    def get_result(self):
+        self.result = openai.ChatCompletion.create(
+            model=model,
+            messages=preprompt+[{"role": "user", "content": self.prompt}]
+            ).choices[0].message.content
+        print(self.result)
 
-    def process_image(self):
-        """Set the image processing flag to true and indicate that the image has not been made yet."""
-        self.image_made = False
-        self.image_processing = True
+    # image_url = ""
+    # image_processing = False
+    # image_made = False
 
-    def get_image(self):
-        """Get the image from the prompt."""
-        try:
-            response = openai.Image.create(prompt=self.prompt, n=1, size="1024x1024")
-            self.image_url = response["data"][0]["url"]
-            # Set the image processing flag to false and indicate that the image has been made.
-            self.image_processing = False
-            self.image_made = True
-        except:
-            self.image_processing = False
-            return pc.window_alert("Error with OpenAI Execution.")
+    # def process_image(self):
+    #     """Set the image processing flag to true and indicate that the image has not been made yet."""
+    #     self.image_made = False
+    #     self.image_processing = True
+
+    # def get_image(self):
+    #     """Get the image from the prompt."""
+    #     try:
+    #         response = openai.Image.create(prompt=self.prompt, n=1, size="1024x1024")
+    #         self.image_url = response["data"][0]["url"]
+    #         # Set the image processing flag to false and indicate that the image has been made.
+    #         self.image_processing = False
+    #         self.image_made = True
+    #     except:
+    #         self.image_processing = False
+    #         return pc.window_alert("Error with OpenAI Execution.")
 
 
 def index():
     return pc.center(
         pc.vstack(
-            pc.heading("DALL-E", font_size="1.5em"),
-            pc.input(placeholder="Enter a prompt..", on_blur=State.set_prompt),
+            # pc.heading("Live Chat", font_size="1.5em"),
+            pc.input(placeholder='請問...', on_blur=State.set_prompt),
             pc.button(
-                "Generate Image",
-                on_click=[State.process_image, State.get_image],
+                "送出",
+                on_click=[State.get_result],
                 width="100%",
             ),
             pc.divider(),
-            pc.cond(
-                State.image_processing,
-                pc.circular_progress(is_indeterminate=True),
-                pc.cond(
-                    State.image_made,
-                    pc.image(
-                        src=State.image_url,
-                        height="25em",
-                        width="25em",
-                    ),
-                ),
+            pc.image(src="https://x1001000-linebot-content.s3.ap-east-1.amazonaws.com/GPT-LightSPA/whitewhite.png", width="512px", height="auto"),
+            # pc.cond(
+            #     State.image_processing,
+            #     pc.circular_progress(is_indeterminate=True),
+            #     pc.cond(
+            #         State.image_made,
+            #         pc.image(
+            #             src=State.image_url,
+            #             height="25em",
+            #             width="25em",
+            #         ),
+            #     ),
+            # ),
+            pc.text_area(
+                default_value=State.result,
+                # placeholder="GPT Result",
+                width="100%",
             ),
             bg="white",
             padding="2em",
@@ -67,5 +81,5 @@ def index():
 
 # Add state and page to the app.
 app = pc.App(state=State)
-app.add_page(index, title="Pynecone:DALL-E")
+app.add_page(index, title="Live Streaming Demo")
 app.compile()
